@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>my notes (mobile)</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#3a2f27">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My Notes">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --paper: #f5f0e1;
+  --paper-dark: #e8dfc9;
+  --ink: #3a2f27;
+  --ink-light: #7a6e62;
+  --accent: #c0392b;
+  --star: #d4a017;
+  --card-shadow: 2px 3px 10px rgba(58,47,39,0.15);
+  --font-hand: 'ZCOOL KuaiLe', 'Caveat', cursive;
+  --font-title: 'Caveat', 'ZCOOL KuaiLe', cursive;
+}
+
+body {
+  font-family: var(--font-hand);
+  background-color: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  /* 旧纸张纹理：多层渐变模拟噪点 */
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,119,90,0.03) 2px, rgba(139,119,90,0.03) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(139,119,90,0.02) 3px, rgba(139,119,90,0.02) 6px),
+    radial-gradient(ellipse at 20% 50%, rgba(210,190,150,0.3) 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 30%, rgba(190,170,130,0.25) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+/* 顶部装饰线 */
+body::before {
+  content: '';
+  display: block;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, var(--accent) 0, var(--accent) 8px, transparent 8px, transparent 16px);
+}
+
+header {
+  text-align: center;
+  padding: 30px 16px 16px;
+  position: relative;
+}
+
+/* 右上角头像 */
+.user-avatar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-light);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--paper-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.user-avatar:hover {
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar .avatar-placeholder {
+  font-size: 1.4rem;
+  color: var(--ink-light);
+  opacity: 0.5;
+  user-select: none;
+}
+
+header h1 {
+  font-family: var(--font-title);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 2px;
+  position: relative;
+  display: inline-block;
+}
+
+header h1::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: var(--accent);
+  margin-top: 4px;
+  border-radius: 2px;
+}
+
+header p {
+  font-size: 1.1rem;
+  color: var(--ink-light);
+  margin-top: 8px;
+}
+
+/* 空状态（标题下方） */
+.empty-state-inline {
+  text-align: center;
+  padding: 10px 20px;
+  color: var(--ink-light);
+  display: none;
+}
+
+.empty-state-inline .empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  opacity: 0.35;
+}
+
+.empty-state-inline p {
+  font-size: 1.1rem;
+  opacity: 0.7;
+}
+
+.empty-state-inline.visible {
+  display: block;
+}
+
+/* 工具栏 */
+.toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar button {
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  padding: 10px 18px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper-dark);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  touch-action: manipulation;
+}
+
+.toolbar button:hover {
+  background: var(--ink);
+  color: var(--paper);
+  transform: translateY(-1px);
+}
+
+.toolbar button.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* 主布局 */
+.main-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 日历栏（可折叠） */
+.sidebar {
+  width: 100%;
+  padding: 16px;
+  border-bottom: 2px dashed rgba(139,119,90,0.25);
+  background: rgba(232,223,201,0.4);
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.sidebar.collapsed {
+  max-height: 0;
+  padding: 0 16px;
+  border-bottom: none;
+  overflow: hidden;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  background: rgba(232,223,201,0.6);
+  border: 1px dashed rgba(139,119,90,0.3);
+  border-radius: 8px;
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  color: var(--ink);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.sidebar-toggle:hover {
+  background: var(--paper-dark);
+}
+
+.sidebar-toggle .toggle-arrow {
+  transition: transform 0.3s;
+  display: inline-block;
+}
+
+.sidebar.collapsed + .main-content .sidebar-toggle .toggle-arrow,
+.sidebar-toggle .toggle-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.sidebar h3 {
+  font-family: var(--font-title);
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+  text-align: center;
+  color: var(--ink);
+  position: relative;
+}
+
+.sidebar h3::after {
+  content: '';
+  display: block;
+  width: 60%;
+  height: 2px;
+  background: var(--accent);
+  margin: 6px auto 0;
+  border-radius: 1px;
+}
+
+/* 年份导航 */
+.year-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.year-nav button {
+  background: none;
+  border: 1px solid var(--ink-light);
+  border-radius: 4px;
+  color: var(--ink);
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.year-nav button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.year-nav .year-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* 月份网格 */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.month-btn {
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  padding: 12px 4px;
+  border: 1px solid rgba(139,119,90,0.25);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  position: relative;
+  touch-action: manipulation;
+}
+
+.month-btn:hover {
+  background: var(--paper-dark);
+  transform: translateY(-1px);
+  box-shadow: 1px 2px 6px rgba(58,47,39,0.12);
+}
+
+.month-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+  box-shadow: 2px 3px 8px rgba(58,47,39,0.2);
+}
+
+.month-btn .note-count {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.month-btn.active .note-count {
+  opacity: 0.8;
+}
+
+/* 日历栏底部统计 */
+.sidebar-stats {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(139,119,90,0.25);
+  font-size: 0.9rem;
+  color: var(--ink-light);
+  text-align: center;
+  line-height: 1.8;
+}
+
+.sidebar-stats span {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* 右侧主内容区 */
+.main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 笔记网格 */
+.notes-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 12px 80px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* 单个笔记卡片 */
+.note-card {
+  background: var(--paper);
+  border-radius: 6px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  border: 1px solid rgba(139,119,90,0.2);
+  /* 模拟纸张边缘不规则 */
+  background-image:
+    linear-gradient(180deg, rgba(245,240,225,0) 0%, rgba(210,200,175,0.1) 100%);
+}
+
+.note-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, transparent 0, transparent 10px, rgba(192,57,43,0.15) 10px, rgba(192,57,43,0.15) 20px);
+  border-radius: 6px 6px 0 0;
+}
+
+.note-card:hover {
+  transform: translateY(-3px) rotate(-0.5deg);
+  box-shadow: 4px 6px 18px rgba(58,47,39,0.2);
+}
+
+.note-card.starred {
+  border-color: var(--star);
+  border-width: 2px;
+}
+
+
+
+.note-card .note-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--ink);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.note-card .note-preview {
+  font-size: 1rem;
+  color: var(--ink-light);
+  line-height: 1.6;
+  word-break: break-word;
+  /* 限制预览行数 */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.note-card .note-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--ink-light);
+  opacity: 0.7;
+}
+
+.note-card .star-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--ink-light);
+  transition: color 0.2s, transform 0.2s;
+  padding: 4px 8px;
+  touch-action: manipulation;
+}
+
+.note-card .star-btn:hover {
+  transform: scale(1.3);
+}
+
+.note-card .star-btn.starred {
+  color: var(--star);
+}
+
+/* 模态框 - 查看/编辑笔记 */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(58,47,39,0.5);
+  z-index: 100;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--paper);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 6px 8px 30px rgba(58,47,39,0.3);
+  position: relative;
+  margin: 0 8px;
+}
+
+.modal.show-lines {
+  /* 便签纸横线效果 */
+  background-image:
+    repeating-linear-gradient(
+      transparent, transparent 31px, rgba(139,119,90,0.12) 31px, rgba(139,119,90,0.12) 32px
+    );
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px dashed rgba(139,119,90,0.3);
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 1;
+}
+
+.modal-header h2 {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+}
+
+.modal-header .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--ink-light);
+  transition: color 0.2s;
+  padding: 4px 8px;
+}
+
+.modal-header .close-btn:hover {
+  color: var(--accent);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-body .view-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.modal-body .view-content {
+  font-size: 1.1rem;
+  line-height: 2;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+}
+
+.modal-body .view-date {
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: var(--ink-light);
+  opacity: 0.7;
+  border-top: 1px dashed rgba(139,119,90,0.2);
+  padding-top: 12px;
+}
+
+/* 编辑模式 */
+.modal-body.edit-mode {
+  padding: 12px 20px 20px;
+}
+
+.modal-body.edit-mode input,
+.modal-body.edit-mode textarea {
+  font-family: var(--font-hand);
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  resize: none;
+  display: block;
+}
+
+.modal-body.edit-mode input {
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 0 0 6px 0;
+  border-bottom: 2px dashed rgba(139,119,90,0.3);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.modal-body.edit-mode textarea {
+  font-size: 1.1rem;
+  line-height: 32px;
+  min-height: 224px;
+  padding: 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px dashed rgba(139,119,90,0.3);
+  position: sticky;
+  bottom: 0;
+  background: var(--paper);
+}
+
+.modal-footer button {
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid var(--ink);
+  min-width: 70px;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-secondary {
+  background: var(--paper-dark);
+  color: var(--ink);
+}
+
+.btn-secondary:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-danger:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* 确认删除弹窗 */
+.confirm-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(58,47,39,0.6);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.confirm-overlay.active {
+  display: flex;
+}
+
+.confirm-box {
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 4px 6px 20px rgba(58,47,39,0.3);
+  max-width: 320px;
+  width: 100%;
+}
+
+.confirm-box p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.confirm-box .confirm-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirm-box .confirm-btns button {
+  min-width: 80px;
+  padding: 10px 20px;
+}
+
+/* 响应式 - 移动端已默认适配 */
+@media (max-width: 768px) {
+  .month-grid { grid-template-columns: repeat(6, 1fr); }
+}
+@media (max-width: 400px) {
+  header h1 { font-size: 2rem; }
+  .month-grid { grid-template-columns: repeat(4, 1fr); }
+  .toolbar button { padding: 8px 14px; font-size: 0.9rem; }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--paper-dark); }
+::-webkit-scrollbar-thumb { background: rgba(139,119,90,0.3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139,119,90,0.5); }
+
+/* 批量删除模式 */
+.note-card .batch-checkbox {
+  display: none;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--ink-light);
+  border-radius: 4px;
+  background: var(--paper);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.15s;
+  touch-action: manipulation;
+}
+
+.batch-mode .note-card .batch-checkbox {
+  display: flex;
+}
+
+.note-card .batch-checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.note-card .batch-checkbox.checked::after {
+  content: '✓';
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.batch-mode .note-card {
+  cursor: pointer;
+}
+
+.batch-mode .note-card.selected {
+  border-color: var(--accent);
+  border-width: 2px;
+  background: rgba(192,57,43,0.05);
+}
+
+/* 批量操作栏 */
+.batch-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 12px 16px;
+  z-index: 80;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -4px 16px rgba(58,47,39,0.3);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.batch-bar.active {
+  display: flex;
+}
+
+.batch-bar .batch-info {
+  font-size: 0.9rem;
+}
+
+.batch-bar .batch-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-bar .batch-btns button {
+  font-family: var(--font-hand);
+  font-size: 0.9rem;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid var(--paper);
+}
+
+.batch-bar .btn-batch-cancel {
+  background: transparent;
+  color: var(--paper);
+}
+
+.batch-bar .btn-batch-cancel:hover {
+  background: rgba(245,240,225,0.15);
+}
+
+.batch-bar .btn-batch-delete {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.batch-bar .btn-batch-delete:hover {
+  background: #a93226;
+}
+
+.batch-bar .btn-batch-selectall {
+  background: transparent;
+  color: var(--paper);
+  border-color: rgba(245,240,225,0.4);
+}
+
+.batch-bar .btn-batch-selectall:hover {
+  background: rgba(245,240,225,0.15);
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.note-card { animation: fadeIn 0.3s ease; }
+
+/* 右侧恐龙动画 - 移动端隐藏 */
+.dino-runner {
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="user-avatar" id="userAvatar" onclick="chooseAvatar()" title="点击更换头像">
+    <span class="avatar-placeholder">&#9787;</span>
+  </div>
+  <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarChange(event)">
+  <h1>My Notes</h1>
+  <p>记录每一个灵光乍现的瞬间</p>
+  <div class="empty-state-inline" id="emptyInline">
+    <div class="empty-icon">&#9998;</div>
+    <p id="emptyInlineMsg">还没有笔记，点击「新建笔记」开始吧</p>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button onclick="openNewNote()">+ 新建笔记</button>
+  <button id="btnBatchDelete" onclick="enterBatchMode()">一键删除</button>
+  <button id="filterAll" class="active" onclick="setFilter('all')">全部</button>
+  <button id="filterStarred" onclick="setFilter('starred')">星标</button>
+</div>
+
+<div class="main-layout">
+  <!-- 日历折叠按钮 -->
+  <button class="sidebar-toggle" onclick="toggleSidebar()">
+    <span class="toggle-arrow" id="toggleArrow">&#9660;</span> 日历
+  </button>
+
+  <!-- 日历栏 -->
+  <aside class="sidebar" id="sidebar">
+    <h3>日历</h3>
+    <div class="year-nav">
+      <button onclick="changeYear(-1)">&lsaquo;</button>
+      <span class="year-label" id="yearLabel"></span>
+      <button onclick="changeYear(1)">&rsaquo;</button>
+    </div>
+    <div class="month-grid" id="monthGrid"></div>
+    <div class="sidebar-stats" id="sidebarStats"></div>
+  </aside>
+
+  <!-- 右侧主内容 -->
+  <div class="main-content">
+    <div class="notes-grid" id="notesGrid"></div>
+  </div>
+</div>
+
+<!-- 恐龙动画 -->
+<div class="dino-runner">
+  <canvas id="dinoCanvas" width="240" height="400"></canvas>
+</div>
+
+<!-- 查看/编辑模态框 -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="noteModal">
+    <div class="modal-header">
+      <h2 id="modalTitle">新建笔记</h2>
+      <button class="close-btn" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- 批量删除操作栏 -->
+<div class="batch-bar" id="batchBar">
+  <div class="batch-info" id="batchInfo">已选择 0 条笔记</div>
+  <div class="batch-btns">
+    <button class="btn-batch-selectall" onclick="batchSelectAll()">全选</button>
+    <button class="btn-batch-cancel" onclick="exitBatchMode()">取消</button>
+    <button class="btn-batch-delete" onclick="batchDeleteConfirm()">删除所选</button>
+  </div>
+</div>
+
+<!-- 确认删除 -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>确定要删除这条笔记吗？</p>
+    <div class="confirm-btns">
+      <button class="btn-secondary" onclick="cancelDelete()">取消</button>
+      <button class="btn-danger" onclick="confirmDelete()">删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'vintage_notes';
+let notes = [];
+let currentFilter = 'all';
+let currentNoteId = null;
+let isEditing = false;
+let deleteTargetId = null;
+
+// 日历状态
+let calendarYear = new Date().getFullYear();
+let selectedMonth = null; // null = 不筛选月份, 0-11 = 选中月份
+
+// ---- 数据操作 ----
+function loadNotes() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    notes = data ? JSON.parse(data) : [];
+  } catch {
+    notes = [];
+  }
+}
+
+function saveNotes() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+}
+
+function createNote(title, content) {
+  const note = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    title: title || '无标题',
+    content: content || '',
+    starred: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  notes.unshift(note);
+  saveNotes();
+  return note;
+}
+
+function updateNote(id, title, content) {
+  const note = notes.find(n => n.id === id);
+  if (note) {
+    note.title = title || '无标题';
+    note.content = content || '';
+    note.updatedAt = new Date().toISOString();
+    saveNotes();
+  }
+}
+
+function toggleStar(id) {
+  const note = notes.find(n => n.id === id);
+  if (note) {
+    note.starred = !note.starred;
+    saveNotes();
+  }
+}
+
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  saveNotes();
+}
+
+// ---- 渲染 ----
+function getFilteredNotes() {
+  let result;
+  if (currentFilter === 'starred') result = notes.filter(n => n.starred);
+  else result = notes;
+
+  // 按日历年份筛选
+  result = result.filter(n => new Date(n.createdAt).getFullYear() === calendarYear);
+
+  // 按选中月份筛选
+  if (selectedMonth !== null) {
+    result = result.filter(n => new Date(n.createdAt).getMonth() === selectedMonth);
+  }
+  return result;
+}
+
+function formatDate(isoStr) {
+  const d = new Date(isoStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}/${m}/${day} ${h}:${min}`;
+}
+
+function renderNotes() {
+  const grid = document.getElementById('notesGrid');
+  const emptyInline = document.getElementById('emptyInline');
+  const emptyMsg = document.getElementById('emptyInlineMsg');
+  const filtered = getFilteredNotes();
+
+  if (filtered.length === 0) {
+    let msg = '还没有笔记，点击「新建笔记」开始吧';
+    if (currentFilter === 'starred' && selectedMonth !== null) msg = `${calendarYear}年${selectedMonth + 1}月没有星标笔记`;
+    else if (currentFilter === 'starred') msg = `${calendarYear}年没有星标笔记`;
+    else if (selectedMonth !== null) msg = `${calendarYear}年${selectedMonth + 1}月没有笔记`;
+    else msg = `${calendarYear}年没有笔记`;
+    emptyMsg.textContent = msg;
+    emptyInline.classList.add('visible');
+    grid.innerHTML = '';
+    return;
+  }
+
+  emptyInline.classList.remove('visible');
+
+  grid.innerHTML = filtered.map(note => `
+    <div class="note-card ${note.starred ? 'starred' : ''} ${batchSelected.has(note.id) ? 'selected' : ''}"
+         data-id="${note.id}"
+         onclick="openViewNote('${note.id}')">
+      <div class="batch-checkbox ${batchSelected.has(note.id) ? 'checked' : ''}" onclick="event.stopPropagation(); toggleBatchSelect('${note.id}')"></div>
+      <div class="note-title">${escapeHtml(note.title)}</div>
+      <div class="note-preview">${escapeHtml(note.content) || '<span style="opacity:0.4">空白笔记</span>'}</div>
+      <div class="note-meta">
+        <span>${formatDate(note.updatedAt)}</span>
+        <button class="star-btn ${note.starred ? 'starred' : ''}"
+                onclick="event.stopPropagation(); handleToggleStar('${note.id}')"
+                title="${note.starred ? '取消星标' : '添加星标'}">
+          ${note.starred ? '&#9733;' : '&#9734;'}
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  if (batchMode) {
+    grid.classList.add('batch-mode');
+  } else {
+    grid.classList.remove('batch-mode');
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---- 筛选 ----
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.toolbar button').forEach(btn => btn.classList.remove('active'));
+  document.getElementById('filter' + filter.charAt(0).toUpperCase() + filter.slice(1)).classList.add('active');
+  renderNotes();
+}
+
+// ---- 星标 ----
+function handleToggleStar(id) {
+  toggleStar(id);
+  renderCalendar();
+  renderNotes();
+}
+
+// ---- 批量删除 ----
+let batchMode = false;
+let batchSelected = new Set();
+
+function enterBatchMode() {
+  batchMode = true;
+  batchSelected.clear();
+  document.querySelector('.notes-grid').classList.add('batch-mode');
+  document.getElementById('batchBar').classList.add('active');
+  document.getElementById('btnBatchDelete').style.display = 'none';
+  updateBatchInfo();
+}
+
+function exitBatchMode() {
+  batchMode = false;
+  batchSelected.clear();
+  document.querySelector('.notes-grid').classList.remove('batch-mode');
+  document.getElementById('batchBar').classList.remove('active');
+  document.getElementById('btnBatchDelete').style.display = '';
+  renderCalendar();
+  renderNotes();
+}
+
+function toggleBatchSelect(id) {
+  if (batchSelected.has(id)) {
+    batchSelected.delete(id);
+  } else {
+    batchSelected.add(id);
+  }
+  const card = document.querySelector(`.note-card[data-id="${id}"]`);
+  if (card) {
+    const cb = card.querySelector('.batch-checkbox');
+    card.classList.toggle('selected', batchSelected.has(id));
+    cb.classList.toggle('checked', batchSelected.has(id));
+  }
+  updateBatchInfo();
+}
+
+function batchSelectAll() {
+  const filtered = getFilteredNotes();
+  const allSelected = filtered.every(n => batchSelected.has(n.id));
+  if (allSelected) {
+    filtered.forEach(n => batchSelected.delete(n.id));
+  } else {
+    filtered.forEach(n => batchSelected.add(n.id));
+  }
+  renderNotes();
+  updateBatchInfo();
+}
+
+function updateBatchInfo() {
+  document.getElementById('batchInfo').textContent = `已选择 ${batchSelected.size} 条笔记`;
+}
+
+function batchDeleteConfirm() {
+  if (batchSelected.size === 0) return;
+  const overlay = document.getElementById('confirmOverlay');
+  const msg = overlay.querySelector('p');
+  msg.textContent = `确定要删除选中的 ${batchSelected.size} 条笔记吗？`;
+  overlay.classList.add('active');
+  window._pendingBatchDelete = true;
+}
+
+// 修改原有的确认删除逻辑以支持批量删除
+
+// ---- 模态框 ----
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  const modal = document.getElementById('noteModal');
+  modal.classList.remove('show-lines');
+  modal.style.backgroundPosition = '';
+  document.body.style.overflow = '';
+  currentNoteId = null;
+  isEditing = false;
+  renderCalendar();
+  renderNotes();
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+// ---- 日历 ----
+const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+function changeYear(delta) {
+  calendarYear += delta;
+  selectedMonth = null;
+  renderCalendar();
+  renderNotes();
+}
+
+function selectMonth(month) {
+  if (selectedMonth === month) {
+    selectedMonth = null; // 再次点击取消选择
+  } else {
+    selectedMonth = month;
+  }
+  renderCalendar();
+  renderNotes();
+}
+
+function getMonthNoteCount(year, month) {
+  return notes.filter(n => {
+    const d = new Date(n.createdAt);
+    return d.getFullYear() === year && d.getMonth() === month;
+  }).length;
+}
+
+function renderCalendar() {
+  document.getElementById('yearLabel').textContent = calendarYear;
+
+  const grid = document.getElementById('monthGrid');
+  grid.innerHTML = MONTH_NAMES.map((name, i) => {
+    const count = getMonthNoteCount(calendarYear, i);
+    const isActive = selectedMonth === i;
+    return `
+      <button class="month-btn ${isActive ? 'active' : ''}" onclick="selectMonth(${i})">
+        ${name}
+        <span class="note-count">${count > 0 ? count + '篇' : ''}</span>
+      </button>
+    `;
+  }).join('');
+
+  // 底部统计
+  const total = notes.length;
+  const totalStarred = notes.filter(n => n.starred).length;
+  const yearCount = notes.filter(n => new Date(n.createdAt).getFullYear() === calendarYear).length;
+
+  document.getElementById('sidebarStats').innerHTML = `
+    <div>本年笔记 <span>${yearCount}</span> 篇</div>
+    <div>全部笔记 <span>${total}</span> 篇</div>
+    <div>星标 <span>${totalStarred}</span></div>
+  `;
+}
+
+// ---- 新建笔记 ----
+function openNewNote() {
+  currentNoteId = null;
+  isEditing = true;
+  document.getElementById('modalTitle').textContent = '新建笔记';
+  renderEditModal('', '');
+  openModal();
+  // 聚焦标题
+  setTimeout(() => {
+    const input = document.querySelector('.modal-body.edit-mode input');
+    if (input) input.focus();
+  }, 100);
+}
+
+// ---- 查看笔记 ----
+function openViewNote(id) {
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+  currentNoteId = id;
+  isEditing = false;
+  document.getElementById('modalTitle').textContent = '查看笔记';
+  renderViewModal(note);
+  openModal();
+}
+
+function renderViewModal(note) {
+  const body = document.getElementById('modalBody');
+  const footer = document.getElementById('modalFooter');
+  const modal = document.getElementById('noteModal');
+
+  body.className = 'modal-body';
+  modal.classList.remove('show-lines');
+  modal.style.backgroundPosition = '';
+
+  body.innerHTML = `
+    <div class="view-title">${escapeHtml(note.title)}</div>
+    <div class="view-content">${escapeHtml(note.content) || '<span style="opacity:0.4">（空白）</span>'}</div>
+    <div class="view-date">
+      创建于 ${formatDate(note.createdAt)}
+      ${note.createdAt !== note.updatedAt ? ' · 编辑于 ' + formatDate(note.updatedAt) : ''}
+    </div>
+  `;
+
+  footer.innerHTML = `
+    <button class="btn-secondary" onclick="switchToEdit()">编辑</button>
+    <button class="btn-danger" onclick="requestDelete('${note.id}')">删除</button>
+  `;
+}
+
+// ---- 编辑模式 ----
+function switchToEdit() {
+  const note = notes.find(n => n.id === currentNoteId);
+  if (!note) return;
+  isEditing = true;
+  document.getElementById('modalTitle').textContent = '编辑笔记';
+  renderEditModal(note.title, note.content);
+  setTimeout(() => {
+    const textarea = document.querySelector('.modal-body.edit-mode textarea');
+    if (textarea) textarea.focus();
+  }, 100);
+}
+
+function renderEditModal(title, content) {
+  const body = document.getElementById('modalBody');
+  const footer = document.getElementById('modalFooter');
+  const modal = document.getElementById('noteModal');
+
+  body.className = 'modal-body edit-mode';
+  modal.classList.add('show-lines');
+
+  body.innerHTML = `
+    <input type="text" id="editTitle" placeholder="标题..." value="${escapeHtml(title)}" maxlength="100">
+    <textarea id="editContent" placeholder="写点什么...">${escapeHtml(content)}</textarea>
+  `;
+
+  // 标题输入框按 Enter 保存
+  const input = body.querySelector('input');
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentNoteId) saveEdit();
+      else saveNew();
+    }
+  });
+
+  // 自动调整textarea高度并对齐横线
+  const textarea = body.querySelector('textarea');
+  textarea.addEventListener('input', autoResize);
+
+  // Tab键插入缩进
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      textarea.value = textarea.value.substring(0, start) + '\t' + textarea.value.substring(end);
+      textarea.selectionStart = textarea.selectionEnd = start + 1;
+      autoResize();
+    }
+  });
+
+  setTimeout(() => {
+    autoResize();
+    alignLines();
+  }, 0);
+
+  function autoResize() {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.max(224, textarea.scrollHeight) + 'px';
+  }
+
+  // 计算横线位置使其与文字对齐
+  function alignLines() {
+    const textareaRect = textarea.getBoundingClientRect();
+    const modalRect = modal.getBoundingClientRect();
+    // textarea 顶部相对于 modal 顶部的偏移
+    const textareaTop = textareaRect.top - modalRect.top + modal.scrollTop;
+    // 找到最近的 32px 对齐位置（文字行底部对齐横线）
+    // line-height=32px，文字基线约在行框底部往上约4px处
+    const lineSpacing = 32;
+    const firstLineBottom = textareaTop + lineSpacing;
+    const offset = firstLineBottom % lineSpacing;
+    const bgOffset = offset === 0 ? 0 : offset - lineSpacing;
+    modal.style.backgroundPosition = `0 ${bgOffset}px`;
+  }
+
+  if (currentNoteId) {
+    footer.innerHTML = `
+      <button class="btn-secondary" onclick="switchToView()">取消</button>
+      <button class="btn-primary" onclick="saveEdit()">保存</button>
+    `;
+  } else {
+    footer.innerHTML = `
+      <button class="btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn-primary" onclick="saveNew()">保存</button>
+    `;
+  }
+}
+
+function switchToView() {
+  const note = notes.find(n => n.id === currentNoteId);
+  if (!note) { closeModal(); return; }
+  isEditing = false;
+  document.getElementById('modalTitle').textContent = '查看笔记';
+  renderViewModal(note);
+}
+
+function saveNew() {
+  const title = document.getElementById('editTitle').value.trim();
+  const content = document.getElementById('editContent').value.trim();
+  if (!title && !content) { closeModal(); return; }
+  createNote(title, content);
+  closeModal();
+}
+
+function saveEdit() {
+  const title = document.getElementById('editTitle').value.trim();
+  const content = document.getElementById('editContent').value.trim();
+  if (!title && !content) return;
+  updateNote(currentNoteId, title, content);
+  // 切回查看模式
+  const note = notes.find(n => n.id === currentNoteId);
+  if (note) {
+    isEditing = false;
+    document.getElementById('modalTitle').textContent = '查看笔记';
+    renderViewModal(note);
+  }
+}
+
+// ---- 删除 ----
+function requestDelete(id) {
+  deleteTargetId = id;
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+
+function cancelDelete() {
+  deleteTargetId = null;
+  window._pendingBatchDelete = false;
+  document.getElementById('confirmOverlay').classList.remove('active');
+}
+
+function confirmDelete() {
+  if (window._pendingBatchDelete) {
+    // 批量删除
+    batchSelected.forEach(id => deleteNote(id));
+    batchSelected.clear();
+    window._pendingBatchDelete = false;
+    document.getElementById('confirmOverlay').classList.remove('active');
+    exitBatchMode();
+  } else if (deleteTargetId) {
+    deleteNote(deleteTargetId);
+    deleteTargetId = null;
+    document.getElementById('confirmOverlay').classList.remove('active');
+    closeModal();
+  }
+}
+
+// ---- 键盘快捷键 ----
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('confirmOverlay').classList.contains('active')) {
+      cancelDelete();
+    } else if (document.getElementById('modalOverlay').classList.contains('active')) {
+      closeModal();
+    }
+  }
+  // Ctrl+Enter 保存
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && isEditing) {
+    e.preventDefault();
+    if (currentNoteId) saveEdit();
+    else saveNew();
+  }
+});
+
+// ---- 头像 ----
+const AVATAR_KEY = 'vintage_avatar';
+
+function chooseAvatar() {
+  document.getElementById('avatarInput').click();
+}
+
+function handleAvatarChange(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const data = ev.target.result;
+    localStorage.setItem(AVATAR_KEY, data);
+    renderAvatar(data);
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function renderAvatar(data) {
+  const avatar = document.getElementById('userAvatar');
+  if (data) {
+    avatar.innerHTML = `<img src="${data}" alt="头像">`;
+  } else {
+    avatar.innerHTML = '<span class="avatar-placeholder">&#9787;</span>';
+  }
+}
+
+function loadAvatar() {
+  const data = localStorage.getItem(AVATAR_KEY);
+  renderAvatar(data);
+}
+
+// ---- 恐龙动画 ----
+(function() {
+  const canvas = document.getElementById('dinoCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  const GROUND_Y = H - 60;
+  const GRAVITY = 0.4;
+  const JUMP_FORCE = -8;
+
+  // 恐龙
+  const dino = {
+    x: 40,
+    y: GROUND_Y,
+    w: 28,
+    h: 30,
+    vy: 0,
+    jumping: false,
+    frame: 0,
+    frameTimer: 0
+  };
+
+  // 障碍物类型
+  const OBSTACLE_TYPES = [
+    { name: 'cactus1', w: 12, h: 24, color: '#5a7247' },    // 小仙人掌
+    { name: 'cactus2', w: 20, h: 30, color: '#4a6237' },    // 大仙人掌
+    { name: 'rock',   w: 18, h: 14, color: '#8a7e6e' },     // 石头
+    { name: 'bird',   w: 22, h: 14, color: '#7a5c3a' },     // 飞鸟
+  ];
+
+  let obstacles = [];
+  let obstacleTimer = 0;
+  let obstacleInterval = 90;
+  let speed = 1.5;
+  let groundOffset = 0;
+
+  // 云朵
+  const clouds = [
+    { x: 60, y: 40, w: 30 },
+    { x: 160, y: 25, w: 22 },
+    { x: 100, y: 55, w: 18 },
+  ];
+
+  function spawnObstacle() {
+    const typeIdx = Math.floor(Math.random() * OBSTACLE_TYPES.length);
+    const type = OBSTACLE_TYPES[typeIdx];
+    const obs = {
+      x: W + 10,
+      y: type.name === 'bird' ? GROUND_Y - 40 - Math.random() * 20 : GROUND_Y - type.h,
+      w: type.w,
+      h: type.h,
+      type: type.name,
+      color: type.color,
+      frame: 0,
+      frameTimer: 0
+    };
+    obstacles.push(obs);
+  }
+
+  function updateDino() {
+    // 自动跳跃逻辑：检测前方障碍物
+    let shouldJump = false;
+    for (const obs of obstacles) {
+      const dist = obs.x - dino.x;
+      if (dist > 0 && dist < 60 && !dino.jumping) {
+        if (obs.type === 'bird' && obs.y < GROUND_Y - 30) {
+          // 鸟飞得高，不跳
+        } else {
+          shouldJump = true;
+        }
+      }
+    }
+
+    if (shouldJump && !dino.jumping) {
+      dino.vy = JUMP_FORCE;
+      dino.jumping = true;
+    }
+
+    dino.vy += GRAVITY;
+    dino.y += dino.vy;
+    if (dino.y >= GROUND_Y) {
+      dino.y = GROUND_Y;
+      dino.vy = 0;
+      dino.jumping = false;
+    }
+
+    // 跑步动画帧
+    dino.frameTimer++;
+    if (dino.frameTimer > 6) {
+      dino.frameTimer = 0;
+      dino.frame = (dino.frame + 1) % 2;
+    }
+  }
+
+  function updateObstacles() {
+    obstacleTimer++;
+    if (obstacleTimer >= obstacleInterval) {
+      obstacleTimer = 0;
+      obstacleInterval = 100 + Math.floor(Math.random() * 60);
+      spawnObstacle();
+    }
+
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      obstacles[i].x -= speed;
+      obstacles[i].frameTimer++;
+      if (obstacles[i].frameTimer > 10) {
+        obstacles[i].frameTimer = 0;
+        obstacles[i].frame = (obstacles[i].frame + 1) % 2;
+      }
+      if (obstacles[i].x + obstacles[i].w < -10) {
+        obstacles.splice(i, 1);
+      }
+    }
+  }
+
+  function drawGround() {
+    ctx.strokeStyle = 'rgba(139,119,90,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, GROUND_Y + 2);
+    ctx.lineTo(W, GROUND_Y + 2);
+    ctx.stroke();
+
+    // 地面纹理点
+    groundOffset = (groundOffset + speed) % 12;
+    ctx.fillStyle = 'rgba(139,119,90,0.15)';
+    for (let x = -groundOffset; x < W; x += 12) {
+      ctx.fillRect(x, GROUND_Y + 6, 3, 1);
+      ctx.fillRect(x + 6, GROUND_Y + 10, 2, 1);
+    }
+  }
+
+  function drawClouds() {
+    ctx.fillStyle = 'rgba(139,119,90,0.08)';
+    for (const c of clouds) {
+      c.x -= 0.3;
+      if (c.x + c.w < 0) c.x = W + 10;
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, c.w / 2, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(c.x - c.w * 0.25, c.y + 3, c.w * 0.3, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawDino() {
+    const x = dino.x;
+    const y = dino.y;
+    ctx.fillStyle = '#3a2f27';
+
+    // 身体
+    ctx.fillRect(x, y - dino.h, dino.w, dino.h - 8);
+    // 头部
+    ctx.fillRect(x + 12, y - dino.h - 10, 16, 12);
+    // 眼睛
+    ctx.fillStyle = '#f5f0e1';
+    ctx.fillRect(x + 22, y - dino.h - 8, 3, 3);
+    // 嘴
+    ctx.fillStyle = '#3a2f27';
+    ctx.fillRect(x + 22, y - dino.h - 3, 8, 2);
+
+    // 手臂
+    ctx.fillRect(x + 6, y - dino.h + 8, 8, 2);
+
+    // 腿（跑步动画）
+    ctx.fillStyle = '#3a2f27';
+    if (dino.jumping) {
+      ctx.fillRect(x + 4, y - 8, 4, 8);
+      ctx.fillRect(x + 16, y - 8, 4, 8);
+    } else if (dino.frame === 0) {
+      ctx.fillRect(x + 4, y - 8, 4, 8);
+      ctx.fillRect(x + 16, y - 4, 4, 4);
+    } else {
+      ctx.fillRect(x + 4, y - 4, 4, 4);
+      ctx.fillRect(x + 16, y - 8, 4, 8);
+    }
+
+    // 尾巴
+    ctx.fillRect(x - 8, y - dino.h + 4, 10, 4);
+    ctx.fillRect(x - 12, y - dino.h + 2, 6, 4);
+  }
+
+  function drawObstacle(obs) {
+    ctx.fillStyle = obs.color;
+
+    if (obs.type === 'cactus1') {
+      // 小仙人掌
+      ctx.fillRect(obs.x + 3, obs.y, 6, obs.h);
+      ctx.fillRect(obs.x, obs.y + 6, 4, 8);
+      ctx.fillRect(obs.x + 8, obs.y + 10, 4, 6);
+      // 刺
+      ctx.fillStyle = '#6a8a57';
+      ctx.fillRect(obs.x + 1, obs.y + 4, 2, 2);
+      ctx.fillRect(obs.x + 9, obs.y + 8, 2, 2);
+    } else if (obs.type === 'cactus2') {
+      // 大仙人掌
+      ctx.fillRect(obs.x + 6, obs.y, 8, obs.h);
+      ctx.fillRect(obs.x, obs.y + 8, 6, 10);
+      ctx.fillRect(obs.x + 14, obs.y + 4, 6, 12);
+      // 刺
+      ctx.fillStyle = '#6a8a57';
+      ctx.fillRect(obs.x + 2, obs.y + 6, 2, 2);
+      ctx.fillRect(obs.x + 16, obs.y + 2, 2, 2);
+    } else if (obs.type === 'rock') {
+      // 石头
+      ctx.beginPath();
+      ctx.moveTo(obs.x + 2, obs.y + obs.h);
+      ctx.lineTo(obs.x, obs.y + obs.h * 0.4);
+      ctx.lineTo(obs.x + obs.w * 0.3, obs.y);
+      ctx.lineTo(obs.x + obs.w * 0.7, obs.y + 2);
+      ctx.lineTo(obs.x + obs.w, obs.y + obs.h * 0.3);
+      ctx.lineTo(obs.x + obs.w - 1, obs.y + obs.h);
+      ctx.closePath();
+      ctx.fill();
+      // 高光
+      ctx.fillStyle = 'rgba(245,240,225,0.2)';
+      ctx.fillRect(obs.x + 4, obs.y + 3, 4, 2);
+    } else if (obs.type === 'bird') {
+      // 飞鸟（翼龙）
+      ctx.fillStyle = obs.color;
+      // 身体
+      ctx.fillRect(obs.x + 6, obs.y + 6, 12, 4);
+      // 头
+      ctx.fillRect(obs.x + 16, obs.y + 4, 6, 5);
+      // 嘴
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(obs.x + 20, obs.y + 6, 4, 2);
+      // 眼
+      ctx.fillStyle = '#f5f0e1';
+      ctx.fillRect(obs.x + 18, obs.y + 5, 2, 2);
+      // 翅膀动画
+      ctx.fillStyle = obs.color;
+      if (obs.frame === 0) {
+        ctx.fillRect(obs.x + 4, obs.y, 8, 6);
+        ctx.fillRect(obs.x, obs.y + 2, 6, 4);
+      } else {
+        ctx.fillRect(obs.x + 4, obs.y + 10, 8, 6);
+        ctx.fillRect(obs.x, obs.y + 10, 6, 4);
+      }
+    }
+  }
+
+  function gameLoop() {
+    ctx.clearRect(0, 0, W, H);
+
+    drawClouds();
+    drawGround();
+    updateDino();
+    updateObstacles();
+
+    for (const obs of obstacles) {
+      drawObstacle(obs);
+    }
+
+    drawDino();
+    requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
+})();
+
+// ---- 日历折叠 ----
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const arrow = document.getElementById('toggleArrow');
+  sidebar.classList.toggle('collapsed');
+  if (sidebar.classList.contains('collapsed')) {
+    arrow.innerHTML = '&#9654;';
+  } else {
+    arrow.innerHTML = '&#9660;';
+  }
+}
+
+// ---- 初始化 ----
+loadNotes();
+
+loadAvatar();
+renderCalendar();
+renderNotes();
+
+// 注册 Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(() => {
+    console.log('Service Worker 已注册');
+  }).catch((err) => {
+    console.log('Service Worker 注册失败:', err);
+  });
+}
+</script>
+</body>
+</html>

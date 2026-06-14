@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Android SDK (too large for GitHub)
+android-sdk/
+
+# JDK
+jdk-*/
+
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+
+# APK files
+*.apk
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log

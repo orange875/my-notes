@@ -1,0 +1,17 @@
+{
+  "appId": "com.mynotes.app",
+  "appName": "My Notes",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "androidScaleType": "CENTER_CROP",
+      "splashFullScreen": true,
+      "splashImmersive": true,
+      "backgroundColor": "#f5f0e1"
+    }
+  }
+}
