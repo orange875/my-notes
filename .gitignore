@@ -7,6 +7,9 @@ android-sdk/
 # JDK
 jdk-*/
 
+# Downloaded archives
+*.zip
+
 # Android build artifacts
 android/.gradle/
 android/build/
